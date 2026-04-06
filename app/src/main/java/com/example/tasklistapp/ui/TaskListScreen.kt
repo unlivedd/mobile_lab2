@@ -12,13 +12,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.tasklistapp.model.Task
 import com.example.tasklistapp.viewmodel.TaskViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskListScreen(viewModel: TaskViewModel) {
     val tasks by viewModel.allTasks.collectAsState()
-    var showDialog by remember { mutableStateOf(false) }
+    var showAddDialog by remember { mutableStateOf(false) }
+    var taskToEdit by remember { mutableStateOf<Task?>(null) }
 
     Scaffold(
         topBar = {
@@ -32,7 +34,7 @@ fun TaskListScreen(viewModel: TaskViewModel) {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showDialog = true },
+                onClick = { showAddDialog = true },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Добавить задачу")
@@ -79,18 +81,30 @@ fun TaskListScreen(viewModel: TaskViewModel) {
                         task = task,
                         onCheckedChange = { viewModel.toggleTaskCompletion(task) },
                         onDelete = { viewModel.deleteTask(task) },
-                        onEdit = { }
+                        onEdit = { taskToEdit = task }
                     )
                 }
             }
         }
 
-        if (showDialog) {
+        if (showAddDialog) {
             AddEditTaskDialog(
-                onDismiss = { showDialog = false },
+                onDismiss = { showAddDialog = false },
                 onSave = { title, description ->
                     viewModel.addTask(title, description)
-                    showDialog = false
+                    showAddDialog = false
+                }
+            )
+        }
+
+        taskToEdit?.let { task ->
+            AddEditTaskDialog(
+                initialTitle = task.title,
+                initialDescription = task.description,
+                onDismiss = { taskToEdit = null },
+                onSave = { title, description ->
+                    viewModel.updateTask(task.copy(title = title, description = description))
+                    taskToEdit = null
                 }
             )
         }
